@@ -24,6 +24,17 @@ public class ModeloResponse {
         this.fechaCreacion = fechaCreacion;
     }
 
+    public static ModeloResponse fromEntity(com.espe.drivex.entity.Modelo e) {
+        return new ModeloResponse(
+                e.getId(),
+                e.getMarca().getId(),
+                e.getMarca().getNombre(),
+                e.getNombre(),
+                e.getActivo(),
+                e.getFechaCreacion()
+        );
+    }
+
     public Long getId() {
         return id;
     }

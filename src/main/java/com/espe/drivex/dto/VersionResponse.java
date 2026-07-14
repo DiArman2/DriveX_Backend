@@ -30,6 +30,20 @@ public class VersionResponse {
         this.fechaCreacion = fechaCreacion;
     }
 
+    public static VersionResponse fromEntity(com.espe.drivex.entity.Version e) {
+        return new VersionResponse(
+                e.getId(),
+                e.getModelo().getId(),
+                e.getModelo().getNombre(),
+                e.getModelo().getMarca().getId(),
+                e.getModelo().getMarca().getNombre(),
+                e.getNombre(),
+                e.getAnio(),
+                e.getActivo(),
+                e.getFechaCreacion()
+        );
+    }
+
     public Long getId() {
         return id;
     }

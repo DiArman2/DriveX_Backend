@@ -16,8 +16,9 @@ import org.springframework.security.web.SecurityFilterChain;
  * Configuración de Spring Security.
  *
  * Roles:
- * - ADMIN : acceso completo (GET, POST, PUT, DELETE)
- * - USER : solo lectura (GET)
+ *  - ADMIN      : acceso completo
+ *  - PROPIETARIO: puede consultar todo, gestionar sus vehículos e imágenes
+ *  - USER       : puede consultar todo, crear reservas y pagos
  *
  * Sesión: STATELESS — sin estado del lado del servidor.
  * Autenticación: HTTP Basic (botón Authorize en Swagger).
@@ -35,35 +36,50 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
+            .cors(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
 
-                        // ── Swagger / OpenAPI: público ──────────────────────────────
-                        .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**")
-                        .permitAll()
+                // ── Público ─────────────────────────────────────────────────
+                .requestMatchers(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
+                ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
 
-                        // ── /api/auth/register: público ─────────────────────────────
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                // ── Auth: cualquier usuario autenticado ──────────────────────
+                .requestMatchers("/api/auth/**").authenticated()
 
-                        // ── /api/auth/me y /api/auth/login: cualquier usuario autenticado
-                        .requestMatchers("/api/auth/**").authenticated()
+                // ── Consulta: USER, PROPIETARIO y ADMIN ─────────────────────
+                .requestMatchers(HttpMethod.GET, "/api/**")
+                        .hasAnyRole("USER", "PROPIETARIO", "ADMIN")
 
-                        // ── Lectura: USER y ADMIN ───────────────────────────────────
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("USER", "ADMIN")
+                // ── USER puede crear reservas y pagos ────────────────────────
+                .requestMatchers(HttpMethod.POST, "/api/reservas/**", "/api/pagos/**")
+                        .hasAnyRole("USER", "PROPIETARIO", "ADMIN")
 
-                        // ── Escritura: solo ADMIN ───────────────────────────────────
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+                // ── PROPIETARIO gestiona sus vehículos e imágenes ────────────
+                .requestMatchers(HttpMethod.POST,
+                        "/api/vehiculos/**", "/api/imagenes-vehiculo/**")
+                        .hasAnyRole("PROPIETARIO", "ADMIN")
+                .requestMatchers(HttpMethod.PUT,
+                        "/api/vehiculos/**", "/api/imagenes-vehiculo/**")
+                        .hasAnyRole("PROPIETARIO", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE,
+                        "/api/vehiculos/**", "/api/imagenes-vehiculo/**")
+                        .hasAnyRole("PROPIETARIO", "ADMIN")
 
-                        // ── Cualquier otra petición requiere autenticación ──────────
-                        .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults());
+                // ── Solo ADMIN para el resto ─────────────────────────────────
+                .requestMatchers(HttpMethod.POST,   "/api/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+
+                .anyRequest().authenticated()
+            )
+            .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }

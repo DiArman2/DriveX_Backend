@@ -26,6 +26,18 @@ public class ImagenVehiculoResponse {
         this.fechaCreacion = fechaCreacion;
     }
 
+    public static ImagenVehiculoResponse fromEntity(com.espe.drivex.entity.ImagenVehiculo e) {
+        return new ImagenVehiculoResponse(
+                e.getId(),
+                e.getVehiculo().getId(),
+                e.getVehiculo().getPlaca(),
+                e.getUrl(),
+                e.getEsPrincipal(),
+                e.getActivo(),
+                e.getFechaCreacion()
+        );
+    }
+
     public Long getId() {
         return id;
     }
